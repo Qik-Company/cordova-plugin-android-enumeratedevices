@@ -9,10 +9,14 @@ function enumerateDevices() {
 }
 
 function groupDevicesByKind(devices) {
-  var groupedDevices = {};
+  var groupedDevices = {
+    videoinput: [],
+    audioinput: [],
+    audiooutput: [],
+  };
   devices.forEach(function (device) {
     if (!groupedDevices[device.kind]) {
-      groupedDevices[device.kind] = [];
+      return;
     }
     groupedDevices[device.kind].push(device);
   });
@@ -50,7 +54,12 @@ function labeledDevices(devices, nativeDevices) {
     cameras[0].label = cameras[0].label || 'Front Camera';
     cameras[1].label = cameras[1].label || 'Back Camera';
   } else {
-    updateEmptyLabel(cameras, groupedNativeDevices.videoinput, 'Camera');
+    // Camera devices get from native need to re-order to match the order of devices
+    updateEmptyLabel(
+      cameras,
+      groupedNativeDevices.videoinput.reverse(),
+      'Camera'
+    );
   }
 
   // Add label for audio input devices
