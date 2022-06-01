@@ -1,6 +1,6 @@
 # cordova-plugin-android-enumeratedevices
-Cordova Android plugin exposing the audio and video devices connected
 
+Cordova Android plugin exposing the audio and video devices connected
 
 We develop this plugin with the aim of fix the empty devices labels in ionic Android using de android webview WebRTC API. We got the labels with the native code but the devices id's were quite different with the WebRTC API that the ionic webview provide us. This is why we were not able to joint the labels with the devices.
 
@@ -8,4 +8,17 @@ Inferring that the devices returned by WebRTC API and by the native code (plugin
 
 Just calling to
 
-`cordova.plugins.EnumerateDevicesPlugin.getEnumerateDevices().then(devices => console.log(devices));`
+```javascript
+// Plugin will override default enumerateDevices to make sure label not empty
+navigator.mediaDevices
+  .enumerateDevices()
+  .then((devices) => console.log(devices));
+
+// Or
+cordova.plugins.mediaDevices
+  .enumerateDevices()
+  .then((devices) => console.log(devices));
+
+// Revert back original enumerateDevices
+cordova.plugins.mediaDevices.revertOriginalEnumerateDevices();
+```
