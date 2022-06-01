@@ -21,8 +21,14 @@ function groupDevicesByKind(devices) {
 
 function updateEmptyLabel(devices, nativeDevices, defaultLabel) {
   devices.forEach(function (device, index) {
-    device.label =
-      nativeDevices[index].label || defaultLabel + ' ' + (index + 1);
+    if (device.label) {
+      return;
+    }
+    if (nativeDevices[index]) {
+      device.label = nativeDevices[index].label;
+      return;
+    }
+    device.label = defaultLabel + ' ' + (index + 1);
   });
 }
 
@@ -86,8 +92,19 @@ function overrideEnumerateDevices() {
               // Add label for devices that have no label
               enumerateDevices()
                 .then(function (nativeDevices) {
-                  labeledDevices(devices, nativeDevices);
-                  resolve(devices);
+                  // Device is immutable, so we need to clone it
+                  var mutableDevices = [];
+                  devices.forEach(function (device) {
+                    mutableDevices.push({
+                      deviceId: device.deviceId,
+                      kind: device.kind,
+                      label: device.label,
+                      groupId: device.groupId,
+                    });
+                  });
+
+                  labeledDevices(mutableDevices, nativeDevices);
+                  resolve(mutableDevices);
                 })
                 .catch(function () {
                   resolve(devices);
