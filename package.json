@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-android-enumeratedevices",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Cordova Android plugin exposing the audio and video devices connected",
   "cordova": {
     "id": "cordova-plugin-android-enumeratedevices",
