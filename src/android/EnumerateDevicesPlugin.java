@@ -26,18 +26,6 @@ public class EnumerateDevicesPlugin extends CordovaPlugin {
     static final String EXTERNAL_CAM = "External Camera";
     static final String UNKNOWN_CAM = "Unknown Camera";
 
-    static final String BUILTIN_MIC = "Built-in Microphone";
-    static final String BLUETOOTH_MIC = "Bluetooth Microphone";
-    static final String WIRED_MIC = "Wired Microphone";
-    static final String USB_MIC = "USB Microphone";
-    static final String UNKNOWN_MIC = "Unknown Microphone";
-
-    static final String BUILTIN_SPEAKER = "Built-in Speaker";
-    static final String BUILTIN_EARPIECE_SPEAKER = "Built-in Earphone Speaker";
-    static final String BLUETOOTH_SPEAKER = "Bluetooth Speaker";
-    static final String WIRED_SPEAKER = "Wired Speaker";
-    static final String UNKNOWN_SPEAKER = "Unknown Speaker";
-
     private JSONArray devices;
 
     @Override
@@ -58,8 +46,8 @@ public class EnumerateDevicesPlugin extends CordovaPlugin {
     private JSONArray enumerateDevices() throws JSONException, CameraAccessException {
         devices = new JSONArray();
         getMics();
-        getSpeakers();
         getCameras();
+        getSpeakers();
         return devices;
     }
 
@@ -68,7 +56,8 @@ public class EnumerateDevicesPlugin extends CordovaPlugin {
         for (int i = 0; i < devices.length(); i++) {
             JSONObject existDevice = devices.getJSONObject(i);
             String label = existDevice.getString("label");
-            if (label.equals(device.getString("label"))) {
+            if (    existDevice.getString("kind").equals(device.getString("kind")) &&
+                    existDevice.getString("label").equals(device.getString("label"))) {
                 number++;
             }
         }
@@ -87,7 +76,7 @@ public class EnumerateDevicesPlugin extends CordovaPlugin {
             device.put("deviceId", "" + mic.getId());
             device.put("groupId", "");
             device.put("kind", "audioinput");
-            device.put("label", this.getMicType(mic));
+            device.put("label", this.typeToString(mic.getType()));
             addDevice(device);
         }
     }
@@ -100,7 +89,7 @@ public class EnumerateDevicesPlugin extends CordovaPlugin {
             device.put("deviceId", "" + speaker.getId());
             device.put("groupId", "");
             device.put("kind", "audiooutput");
-            device.put("label", this.getSpeakerType(speaker));
+            device.put("label", this.typeToString(speaker.getType()));
             addDevice(device);
         }
     }
@@ -119,52 +108,56 @@ public class EnumerateDevicesPlugin extends CordovaPlugin {
         }
     }
 
-    private String getMicType(AudioDeviceInfo input) {
-        String deviceType;
-
-        switch (input.getType()) {
-            case AudioDeviceInfo.TYPE_BLUETOOTH_SCO:
-                deviceType = BLUETOOTH_MIC;
-                break;
-            case AudioDeviceInfo.TYPE_BUILTIN_MIC:
-                deviceType = BUILTIN_MIC;
-                break;
-            case AudioDeviceInfo.TYPE_WIRED_HEADSET:
-                deviceType = WIRED_MIC;
-                break;
-            case AudioDeviceInfo.TYPE_USB_DEVICE:
-                deviceType = USB_MIC;
-                break;
-            default:
-                deviceType = UNKNOWN_MIC;
-                break;
-        }
-
-        return input.getProductName().toString() + " " +  deviceType;
-    }
-
-    private String getSpeakerType(AudioDeviceInfo input) {
-        String deviceType;
-        switch (input.getType()) {
-            case AudioDeviceInfo.TYPE_BUILTIN_SPEAKER:
-                deviceType = BUILTIN_SPEAKER;
-                break;
-            case AudioDeviceInfo.TYPE_BUILTIN_EARPIECE:
-                deviceType = BUILTIN_EARPIECE_SPEAKER;
-                break;
-            case AudioDeviceInfo.TYPE_BLUETOOTH_SCO:
+    private String typeToString(int type){
+        switch (type) {
+            case AudioDeviceInfo.TYPE_AUX_LINE:
+                return "Aux line-level connectors";
             case AudioDeviceInfo.TYPE_BLUETOOTH_A2DP:
-                deviceType = BLUETOOTH_SPEAKER;
-                break;
+                return "Bluetooth device A2DP profile";
+            case AudioDeviceInfo.TYPE_BLUETOOTH_SCO:
+                return "Bluetooth device telephony";
+            case AudioDeviceInfo.TYPE_BUILTIN_EARPIECE:
+                return "Built-in earphone speaker";
+            case AudioDeviceInfo.TYPE_BUILTIN_MIC:
+                return "Built-in microphone";
+            case AudioDeviceInfo.TYPE_BUILTIN_SPEAKER:
+                return "Built-in speaker";
+            case AudioDeviceInfo.TYPE_BUS:
+                return "BUS";
+            case AudioDeviceInfo.TYPE_DOCK:
+                return "DOCK";
+            case AudioDeviceInfo.TYPE_FM:
+                return "FM";
+            case AudioDeviceInfo.TYPE_FM_TUNER:
+                return "FM tuner";
+            case AudioDeviceInfo.TYPE_HDMI:
+                return "HDMI";
+            case AudioDeviceInfo.TYPE_HDMI_ARC:
+                return "HDMI audio return channel";
+            case AudioDeviceInfo.TYPE_IP:
+                return "IP";
+            case AudioDeviceInfo.TYPE_LINE_ANALOG:
+                return "Line analog";
+            case AudioDeviceInfo.TYPE_LINE_DIGITAL:
+                return "Line digital";
+            case AudioDeviceInfo.TYPE_TELEPHONY:
+                return "Telephony";
+            case AudioDeviceInfo.TYPE_TV_TUNER:
+                return "TV tuner";
+            case AudioDeviceInfo.TYPE_USB_ACCESSORY:
+                return "USB accessory";
+            case AudioDeviceInfo.TYPE_USB_DEVICE:
+                return "USB device";
+            case AudioDeviceInfo.TYPE_WIRED_HEADPHONES:
+                return "Wired headphones";
             case AudioDeviceInfo.TYPE_WIRED_HEADSET:
-                deviceType = WIRED_SPEAKER;
-                break;
+                return "Wired headset";
             default:
-                deviceType = UNKNOWN_SPEAKER;
-                break;
+            case AudioDeviceInfo.TYPE_UNKNOWN:
+                return "Unknown";
         }
-        return input.getProductName().toString() + " " + deviceType;
     }
+
 
     private String getCameraType(CameraCharacteristics input) {
         switch (input.get(CameraCharacteristics.LENS_FACING)) {
