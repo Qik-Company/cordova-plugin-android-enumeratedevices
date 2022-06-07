@@ -18,9 +18,12 @@ import androidx.annotation.RequiresApi;
 
 import android.content.Context;
 
+import java.util.ArrayList;
+import java.util.Collections;
+
 @RequiresApi(api = Build.VERSION_CODES.M)
 public class EnumerateDevicesPlugin extends CordovaPlugin {
-   
+
     static final String FRONT_CAM = "Front Camera";
     static final String BACK_CAM = "Back Camera";
     static final String EXTERNAL_CAM = "External Camera";
@@ -55,7 +58,6 @@ public class EnumerateDevicesPlugin extends CordovaPlugin {
         int number = 0;
         for (int i = 0; i < devices.length(); i++) {
             JSONObject existDevice = devices.getJSONObject(i);
-            String label = existDevice.getString("label");
             if (    existDevice.getString("kind").equals(device.getString("kind")) &&
                     existDevice.getString("label").equals(device.getString("label"))) {
                 number++;
@@ -68,30 +70,55 @@ public class EnumerateDevicesPlugin extends CordovaPlugin {
         devices.put(device);
     }
 
+    private void sortedAndAddAudioDevice(ArrayList<JSONObject> preSortedAudioDevices) throws JSONException {
+        // Move built-in to first
+        Collections.sort(preSortedAudioDevices, (obj1, obj2) -> {
+            int obj1Order = 0;
+            int obj2Order = 0;
+            try {
+                obj1Order = obj1.getInt("order");
+            } catch (Exception ignored) {
+            }
+            try {
+                obj2Order = obj2.getInt("order");
+            } catch (Exception ignored) {
+            }
+            return obj2Order - obj1Order;
+        });
+
+        for (JSONObject device: preSortedAudioDevices) {
+            addDevice(device);
+        }
+    }
+
     private void getMics() throws JSONException {
         AudioManager audioManager = (AudioManager) this.cordova.getContext().getSystemService(Context.AUDIO_SERVICE);
         AudioDeviceInfo[] mics = audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS);
+        ArrayList<JSONObject> preSortedMics = new ArrayList<>();
         for (AudioDeviceInfo mic : mics) {
             JSONObject device = new JSONObject();
             device.put("deviceId", "" + mic.getId());
             device.put("groupId", "");
             device.put("kind", "audioinput");
-            device.put("label", this.typeToString(mic.getType()));
-            addDevice(device);
+            addLabelByType(device, mic.getType());
+            preSortedMics.add(device);
         }
+        sortedAndAddAudioDevice(preSortedMics);
     }
 
     private void getSpeakers() throws JSONException {
         AudioManager audioManager = (AudioManager) this.cordova.getContext().getSystemService(Context.AUDIO_SERVICE);
         AudioDeviceInfo[] speakers = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
+        ArrayList<JSONObject> preSortedSpeakers = new ArrayList<>();
         for (AudioDeviceInfo speaker : speakers) {
             JSONObject device = new JSONObject();
             device.put("deviceId", "" + speaker.getId());
             device.put("groupId", "");
             device.put("kind", "audiooutput");
-            device.put("label", this.typeToString(speaker.getType()));
-            addDevice(device);
+            addLabelByType(device, speaker.getType());
+            preSortedSpeakers.add(device);
         }
+        sortedAndAddAudioDevice(preSortedSpeakers);
     }
 
     private void getCameras() throws JSONException, CameraAccessException {
@@ -108,56 +135,95 @@ public class EnumerateDevicesPlugin extends CordovaPlugin {
         }
     }
 
-    private String typeToString(int type){
+    private void addLabelByType(JSONObject device, int type) throws JSONException {
         switch (type) {
-            case AudioDeviceInfo.TYPE_AUX_LINE:
-                return "Aux line-level connectors";
             case AudioDeviceInfo.TYPE_BLUETOOTH_A2DP:
-                return "Bluetooth device A2DP profile";
             case AudioDeviceInfo.TYPE_BLUETOOTH_SCO:
-                return "Bluetooth device telephony";
-            case AudioDeviceInfo.TYPE_BUILTIN_EARPIECE:
-                return "Built-in earphone speaker";
+                device.put("label", "Bluetooth device");
+                device.put("type", "TYPE_BLUETOOTH_SCO");
+                break;
             case AudioDeviceInfo.TYPE_BUILTIN_MIC:
-                return "Built-in microphone";
-            case AudioDeviceInfo.TYPE_BUILTIN_SPEAKER:
-                return "Built-in speaker";
-            case AudioDeviceInfo.TYPE_BUS:
-                return "BUS";
-            case AudioDeviceInfo.TYPE_DOCK:
-                return "DOCK";
-            case AudioDeviceInfo.TYPE_FM:
-                return "FM";
-            case AudioDeviceInfo.TYPE_FM_TUNER:
-                return "FM tuner";
-            case AudioDeviceInfo.TYPE_HDMI:
-                return "HDMI";
-            case AudioDeviceInfo.TYPE_HDMI_ARC:
-                return "HDMI audio return channel";
-            case AudioDeviceInfo.TYPE_IP:
-                return "IP";
-            case AudioDeviceInfo.TYPE_LINE_ANALOG:
-                return "Line analog";
-            case AudioDeviceInfo.TYPE_LINE_DIGITAL:
-                return "Line digital";
+                device.put("label", "Built-in microphone");
+                device.put("type", "TYPE_BUILTIN_MIC");
+                device.put("order", 1);
+                break;
             case AudioDeviceInfo.TYPE_TELEPHONY:
-                return "Telephony";
+                device.put("label", "Telephony");
+                device.put("type", "TYPE_TELEPHONY");
+//                device.put("order", 1);
+                break;
+            case AudioDeviceInfo.TYPE_BUILTIN_SPEAKER:
+                device.put("label", "Built-in speaker");
+                device.put("type", "TYPE_BUILTIN_SPEAKER");
+                device.put("order", 1);
+                break;
+            case AudioDeviceInfo.TYPE_BUILTIN_EARPIECE:
+                device.put("label", "Built-in earphone speaker");
+                device.put("type", "TYPE_BUILTIN_EARPIECE");
+                device.put("order", 1);
+                break;
+            case AudioDeviceInfo.TYPE_BUS:
+                device.put("label", "Bus");
+                device.put("type", "TYPE_BUS");
+                break;
+            case AudioDeviceInfo.TYPE_DOCK:
+                device.put("label", "Dock");
+                device.put("type", "DOCK");
+                break;
+            case AudioDeviceInfo.TYPE_FM:
+                device.put("label", "FM");
+                device.put("type", "TYPE_FM");
+                break;
+            case AudioDeviceInfo.TYPE_FM_TUNER:
+                device.put("label", "FM tuner");
+                device.put("type", "TYPE_FM_TUNER");
+                break;
+            case AudioDeviceInfo.TYPE_HDMI:
+                device.put("label", "HDMI");
+                device.put("type", "TYPE_HDMI");
+                break;
+            case AudioDeviceInfo.TYPE_HDMI_ARC:
+                device.put("label", "HDMI audio return channel");
+                device.put("type", "TYPE_HDMI_ARC");
+                break;
+            case AudioDeviceInfo.TYPE_IP:
+                device.put("label", "IP");
+                device.put("type", "TYPE_IP");
+                break;
+            case AudioDeviceInfo.TYPE_LINE_ANALOG:
+                device.put("label", "Line analog");
+                device.put("type", "TYPE_LINE_ANALOG");
+                break;
+            case AudioDeviceInfo.TYPE_LINE_DIGITAL:
+                device.put("label", "Line digital");
+                device.put("type", "TYPE_LINE_DIGITAL");
+                break;
             case AudioDeviceInfo.TYPE_TV_TUNER:
-                return "TV tuner";
+                device.put("label", "TV tuner");
+                device.put("type", "TYPE_TV_TUNER");
+                break;
             case AudioDeviceInfo.TYPE_USB_ACCESSORY:
-                return "USB accessory";
+                device.put("label", "USB accessory");
+                device.put("type", "TYPE_USB_ACCESSORY");
+                break;
             case AudioDeviceInfo.TYPE_USB_DEVICE:
-                return "USB device";
+                device.put("label", "USB device");
+                device.put("type", "TYPE_USB_DEVICE");
+                break;
             case AudioDeviceInfo.TYPE_WIRED_HEADPHONES:
-                return "Wired headphones";
+                device.put("label", "Wired headphones");
+                device.put("type", "TYPE_WIRED_HEADPHONES");
+                break;
             case AudioDeviceInfo.TYPE_WIRED_HEADSET:
-                return "Wired headset";
+                device.put("label", "Wired headset");
+                device.put("type", "TYPE_WIRED_HEADSET");
+                break;
             default:
-            case AudioDeviceInfo.TYPE_UNKNOWN:
-                return "Unknown";
+                device.put("label", "Unknown");
+                device.put("type", "TYPE_UNKNOWN");
+                break;
         }
     }
-
 
     private String getCameraType(CameraCharacteristics input) {
         switch (input.get(CameraCharacteristics.LENS_FACING)) {
