@@ -54,23 +54,7 @@ public class EnumerateDevicesPlugin extends CordovaPlugin {
         return devices;
     }
 
-    private void addDevice(JSONObject device) throws JSONException {
-        int number = 0;
-        for (int i = 0; i < devices.length(); i++) {
-            JSONObject existDevice = devices.getJSONObject(i);
-            if (    existDevice.getString("kind").equals(device.getString("kind")) &&
-                    existDevice.getString("label").equals(device.getString("label"))) {
-                number++;
-            }
-        }
-        if (number > 0) {
-            String numberedLabel = device.getString("label") + " " + number;
-            device.put("label", numberedLabel);
-        }
-        devices.put(device);
-    }
-
-    private void sortedAndAddAudioDevice(ArrayList<JSONObject> preSortedAudioDevices) throws JSONException {
+    private void sortedAndAddAudioDevice(ArrayList<JSONObject> preSortedAudioDevices) {
         // Move built-in to first
         Collections.sort(preSortedAudioDevices, (obj1, obj2) -> {
             int obj1Order = 0;
@@ -87,7 +71,7 @@ public class EnumerateDevicesPlugin extends CordovaPlugin {
         });
 
         for (JSONObject device: preSortedAudioDevices) {
-            addDevice(device);
+            devices.put(device);
         }
     }
 
@@ -131,7 +115,7 @@ public class EnumerateDevicesPlugin extends CordovaPlugin {
             device.put("groupId", "");
             device.put("kind", "videoinput");
             device.put("label", label);
-            addDevice(device);
+            devices.put(device);
         }
     }
 
@@ -139,18 +123,18 @@ public class EnumerateDevicesPlugin extends CordovaPlugin {
         switch (type) {
             case AudioDeviceInfo.TYPE_BLUETOOTH_A2DP:
             case AudioDeviceInfo.TYPE_BLUETOOTH_SCO:
-                device.put("label", "Bluetooth device");
+                device.put("label", "Bluetooth headset");
                 device.put("type", "TYPE_BLUETOOTH_SCO");
                 break;
             case AudioDeviceInfo.TYPE_BUILTIN_MIC:
-                device.put("label", "Built-in microphone");
+                device.put("label", "Speakerphone");
                 device.put("type", "TYPE_BUILTIN_MIC");
-                device.put("order", 1);
+                device.put("order", 3);
                 break;
             case AudioDeviceInfo.TYPE_TELEPHONY:
-                device.put("label", "Telephony");
+                device.put("label", "Headset earpiece");
                 device.put("type", "TYPE_TELEPHONY");
-//                device.put("order", 1);
+                device.put("order", 1);
                 break;
             case AudioDeviceInfo.TYPE_BUILTIN_SPEAKER:
                 device.put("label", "Built-in speaker");
@@ -217,6 +201,7 @@ public class EnumerateDevicesPlugin extends CordovaPlugin {
             case AudioDeviceInfo.TYPE_WIRED_HEADSET:
                 device.put("label", "Wired headset");
                 device.put("type", "TYPE_WIRED_HEADSET");
+                device.put("order", 2);
                 break;
             default:
                 device.put("label", "Unknown");
